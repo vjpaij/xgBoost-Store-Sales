@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the data
+##Load the data
 ross_df = pd.read_csv('train.csv')
 store_df = pd.read_csv('store.csv')
 test_df = pd.read_csv('test.csv')
@@ -68,4 +68,19 @@ promo_cols(merged_test_df)
 # print(merged_train_df[(merged_train_df['Store'] == 825) & (merged_train_df['Date'] == '2015-03-03')])
 # print(merged_train_df.loc[168074])
 
+##Input and Target columns
+merged_train_df.columns
+input_cols = ['Store', 'DayOfWeek', 'Promo', 'StateHoliday', 'SchoolHoliday', 'StoreType', 'Assortment', 'CompetitionDistance', 
+              'CompetitionOpen', 'Year', 'Month', 'Day', 'WeekOfYear', 'Promo2', 'Promo2Open', 'IsPromo2Month']
+target_cols = 'Sales'
+
+inputs = merged_train_df[input_cols].copy()
+targets = merged_train_df[target_cols].copy()
+test_inputs = merged_test_df[input_cols].copy()
+
+numeric_cols = inputs.select_dtypes(include=np.number).columns.tolist()
+numeric_cols.remove('DayOfWeek')
+categorical_cols = inputs.select_dtypes('object').columns.tolist()
+categorical_cols.insert(0, 'DayOfWeek')
+print(f"Numeric cols: {numeric_cols}\nCategorical cols: {categorical_cols}")
 
