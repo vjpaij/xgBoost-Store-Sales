@@ -84,3 +84,24 @@ categorical_cols = inputs.select_dtypes('object').columns.tolist()
 categorical_cols.insert(0, 'DayOfWeek')
 print(f"Numeric cols: {numeric_cols}\nCategorical cols: {categorical_cols}")
 
+##Impute missing numerical data
+inputs[numeric_cols] = inputs[numeric_cols].isna().sum()
+#we can see empty values only against CompetitionDistance. This might indicate that there is no competition nearby. So we can fill 
+#it with a large number (to indicate competition is very far away)
+max_distance = inputs['CompetitionDistance'].max() #75860.0
+inputs['CompetitionDistance'].fillna(max_distance * 2, inplace=True)
+test_inputs['CompetitionDistance'].fillna(max_distance * 2, inplace=True)   
+
+##Scaling numerical data
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler().fit(inputs[numeric_cols])
+inputs[numeric_cols] = scaler.transform(inputs[numeric_cols])
+test_inputs[numeric_cols] = scaler.transform(test_inputs[numeric_cols])
+
+##Encode Categorical data
+from sklearn.preprocessing import OneHotEncoder
+encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore').fit(inputs[categorical_cols])
+encoder_cols = list(encoder.get_feature_names(categorical_cols))
+inputs[encoder_cols] = encoder.transform(inputs[categorical_cols])
+test_inputs[encoder_cols] = encoder.transform(test_inputs[categorical_cols])
+
