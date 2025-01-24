@@ -89,8 +89,8 @@ inputs[numeric_cols] = inputs[numeric_cols].isna().sum()
 #we can see empty values only against CompetitionDistance. This might indicate that there is no competition nearby. So we can fill 
 #it with a large number (to indicate competition is very far away)
 max_distance = inputs['CompetitionDistance'].max() #75860.0
-inputs['CompetitionDistance'].fillna(max_distance * 2, inplace=True)
-test_inputs['CompetitionDistance'].fillna(max_distance * 2, inplace=True)   
+inputs['CompetitionDistance'] = inputs['CompetitionDistance'].fillna(max_distance * 2)
+test_inputs['CompetitionDistance'] = test_inputs['CompetitionDistance'].fillna(max_distance * 2)   
 
 ##Scaling numerical data
 from sklearn.preprocessing import MinMaxScaler
@@ -100,8 +100,42 @@ test_inputs[numeric_cols] = scaler.transform(test_inputs[numeric_cols])
 
 ##Encode Categorical data
 from sklearn.preprocessing import OneHotEncoder
+inputs[categorical_cols] = inputs[categorical_cols].astype(str) #few columns have values both in integer and strings.
+test_inputs[categorical_cols] = test_inputs[categorical_cols].astype(str)
 encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore').fit(inputs[categorical_cols])
-encoder_cols = list(encoder.get_feature_names(categorical_cols))
+encoder_cols = list(encoder.get_feature_names_out(categorical_cols))
 inputs[encoder_cols] = encoder.transform(inputs[categorical_cols])
 test_inputs[encoder_cols] = encoder.transform(test_inputs[categorical_cols])
+
+##Train the data
+X = inputs[numeric_cols + encoder_cols]
+X_test = test_inputs[numeric_cols + encoder_cols]
+
+from xgboost import XGBRegressor
+model = XGBRegressor(n_estimators=20, n_jobs=1, random_state=42, max_depth=4)
+model.fit(X, targets)
+
+#Predictions
+preds = model.predict(X)
+print(preds)
+
+#Evaluate
+from sklearn.metrics import root_mean_squared_error
+def rmse(y_true, y_pred):
+    return root_mean_squared_error(y_true, y_pred)
+
+print(rmse(targets, preds)) #2927.0
+
+#Importance Score
+importance_df = pd.DataFrame({
+    'feature': X.columns,
+    'importance': model.feature_importances_
+}).sort_values('importance', ascending=False)
+importance_df.head(10)
+
+plt.figure(figsize=(10, 6))
+plt.title('Feature Importance')
+sns.barplot(data=importance_df.head(10), x='importance', y='feature')
+plt.show()
+
 
